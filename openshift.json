@@ -1,0 +1,135 @@
+{
+  "kind": "Template",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "irssi",
+    "annotations": {
+      "description": "This template will run irssi in Docker container"
+    }
+  },
+  "objects": [
+    {
+      "kind": "Service",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "irssi-ssh"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "ssh",
+            "protocol": "TCP",
+            "port": 2222,
+            "targetPort": 2222,
+            "nodePort": 0
+          }
+        ],
+        "selector": {
+          "name": "irssi"
+        }
+      }
+    },
+    {
+      "kind": "Route",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "irssi-route",
+        "creationTimestamp": null
+      },
+      "spec": {
+        "host": "${ROUTE_NAME}",
+        "to": {
+          "kind": "Service",
+          "name": "irssi-ssh"
+        }
+      }
+    },
+    {
+      "kind": "ImageStream",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "irssi-docker"
+      },
+      "spec": {
+        "dockerImageRepository": "mfojtik/irssi-docker"
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "irssi"
+      },
+      "spec": {
+        "strategy": {
+          "type": "Rolling",
+          "rollingParams": {
+            "updatePeriodSeconds": 1,
+            "intervalSeconds": 1,
+            "timeoutSeconds": 120
+          },
+          "resources": {}
+        },
+        "triggers": [
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "irsii"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "irssi-docker:latest"
+              },
+              "lastTriggeredImage": ""
+            }
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "replicas": 2,
+        "selector": {
+          "name": "irssi"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "name": "irssi"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "irssi",
+                "image": "irssi-docker",
+                "ports": [
+                  {
+                    "containerPort": 2222,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": []
+              }
+            ],
+            "restartPolicy": "Always",
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccount": ""
+          }
+        }
+      },
+      "status": {}
+    },
+  ],
+  "parameters": [
+    {
+      "name": "ROUTE_NAME",
+      "description": "The domain to use for this template",
+      "value": "irssi.alfa.mifo.sk"
+    }
+  ],
+  "labels": {
+    "template": "application-irssi"
+  }
+}
